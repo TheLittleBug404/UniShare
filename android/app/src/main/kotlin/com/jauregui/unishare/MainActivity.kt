@@ -1,4 +1,4 @@
-package com.example.uni_share
+package com.jauregui.unishare
 
 import io.flutter.embedding.android.FlutterActivity
 

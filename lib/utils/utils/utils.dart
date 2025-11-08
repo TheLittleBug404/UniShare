@@ -72,7 +72,7 @@ class Utils {
   static Widget uniShareLogo() {
     return const FadeInImage(
       placeholder: AssetImage('assets/img/logo_unishare.webp'),
-      image: AssetImage('assets/img/logo_unishare.webp'),
+      image: AssetImage('assets/img/logo_unishare.webp',),
       fadeInDuration: Duration(seconds: 2),
     );
   }

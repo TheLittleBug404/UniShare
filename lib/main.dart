@@ -1,20 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:get/get.dart';
 import 'package:uni_share/controllers/loading_controller/loading_controller.dart';
 import 'package:uni_share/controllers/login_controller/login_controller.dart';
 import 'package:uni_share/controllers/navigation_controller/navigation_controller.dart';
+import 'package:uni_share/pages/dashboard_page/dasboard_page.dart';
 import 'package:uni_share/pages/home_page/home_page.dart';
 import 'package:uni_share/pages/loading_page/loading_page.dart';
 import 'package:uni_share/pages/login_page/login_page.dart';
 import 'package:uni_share/pages/registro_page/registro_page.dart';
-import 'package:uni_share/pages/registro_valido_page/registro_valido_page.dart';
 import 'package:uni_share/theme/theme_uni_share.dart';
 import 'package:uni_share/utils/constantes/constantes.dart';
 import 'package:uni_share/utils/utils/utils.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: ".env");
+  String supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
+  String supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+  await Supabase.initialize(
+    url: supabaseUrl, 
+    anonKey: supabaseAnonKey,
+  );
   runApp(const MainApp());
   Get.put(LoginController());
   Get.put(NavigationController());
@@ -46,11 +56,7 @@ class MainApp extends StatelessWidget {
         GetPage(name: HomePage.route, page: () => const HomePage()),
         GetPage(name: LoginPage.route, page: () => const LoginPage()),
         GetPage(name: RegistroPage.route, page: () => const RegistroPage()),
-        GetPage(
-          name: RegistroValidoPage.route,
-          page: () =>
-              const RegistroValidoPage(emailRegistro: '', passwordRegistro: ''),
-        ),
+        GetPage(name: DasboardPage.route,page: () => const DasboardPage()),
       ],
     );
   }

@@ -1,12 +1,15 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:get/get.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:loading_overlay/loading_overlay.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uni_share/controllers/loading_controller/loading_controller.dart';
-import 'package:uni_share/controllers/login_controller/login_controller.dart';
+import 'package:uni_share/pages/dashboard_page/dasboard_page.dart';
 import 'package:uni_share/pages/registro_page/registro_page.dart';
 import 'package:uni_share/utils/helpers/helpers.dart';
 import 'package:uni_share/utils/utils/utils.dart';
@@ -29,7 +32,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
 
   final _formKey = GlobalKey<FormState>();
-  final _formKey2 = GlobalKey<FormState>();
+  final SupabaseClient supabase = Supabase.instance.client;
 
   final loadingC = Get.find<LoadingController>();
   @override
@@ -82,39 +85,10 @@ class _LoginPageState extends State<LoginPage> {
                   child: _botonIngresar(),
                 ),
                 Utils.espacio10,
-                /*TextButton(
-                  style: TextButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                  ),
-                  onPressed: () async {
-                    await _showRecuperarContrasenia(
-                      context,
-                      'Recuperar contraseña',
-                      Utils.colorTextoBordesIconos, //Utils.colorGuindo(0.8),
-                      'Ingrese su correo electrónico con el que se registro en el sistema.',
-                      emailRestorePass,
-                    );
-                  },
-                  child: Utils.estiloTexto(
-                    '¿Olvidó su contraseña?',
-                    14.0,
-                    false,
-                    Utils.colorTextoBordesIconos,
-                  ),
-                ),*/
                 SizedBox(
                   width: double.infinity,
                   height: 40.0,
-                  child: Utils.elevatedButton(
-                    "REGISTRARSE",
-                    Utils.primaryColor,
-                    () {
-                      Get.to(
-                        RegistroPage(),
-                        duration: Duration(milliseconds: 500),
-                      );
-                    },
-                  ),
+                  child: _botonRegistro(),
                 ),
               ],
             ),
@@ -130,22 +104,136 @@ class _LoginPageState extends State<LoginPage> {
       Buttons.google,
       text: "INGRESAR CON GOOGLE",
       onPressed: () async {
-        //await LoginServiceGoogle().loginGoogle();
         log('Presionaste el boton ingresar con google');
+        loadingC.setOnLoading();
+        const webClientId =
+            '959671764801-flrr1st5mqcend2ugevies5o6f790bsr.apps.googleusercontent.com';
+        const iosClientId =
+            '959671764801-mejnufcglfddgpqfi5rvmnnmmp9v9204.apps.googleusercontent.com';
+        try {
+          final GoogleSignIn signIn = GoogleSignIn.instance;
+          unawaited(
+            signIn.initialize(
+              clientId: iosClientId,
+              serverClientId: webClientId,
+            ),
+          );
+          final googleAccount = await signIn.authenticate();
+          final googleAuthorization = await googleAccount.authorizationClient
+              .authorizationForScopes(['Correo electrónico']);
+          final googleAuthentication = googleAccount.authentication;
+          final idToken = googleAuthentication.idToken;
+          final accessToken = googleAuthorization?.accessToken;
+
+          if (idToken == null) {
+            throw 'No ID Token found.';
+          }
+          //verificamos si el email existe y si existe la cuenta
+          /*final email = googleAccount.email;
+          final userExists = await _checkIfUserExists(email);
+          if (!userExists) {
+            await signIn.signOut(); // Cerrar sesión de Google
+            Utils.showSnakbarError(
+              "Error",
+              "Esta cuenta no está registrada. Por favor, regístrate primero.",
+              4,
+            );
+            return;
+          }*/
+          //si existe la cuenta entonces entramos normal
+          await supabase.auth.signInWithIdToken(
+            provider: OAuthProvider.google,
+            idToken: idToken,
+            accessToken: accessToken,
+          );
+          Get.to(DasboardPage(), duration: Duration(milliseconds: 500));
+          Utils.showSnakbarOK("Bienvenido", "Sesión iniciada con Google", 4);
+        } catch (e) {
+          Utils.showSnakbarError(
+            "Error",
+            "No se pudo iniciar sesión con Google",
+            4,
+          );
+        } finally {
+          loadingC.setOffLoading();
+        }
       },
     );
   }
 
+  // Función para verificar si el usuario existe
+  /*Future<bool> _checkIfUserExists(String email) async {
+    try {
+      await supabase.auth.admin.listUsers();
+      return await _checkUserExistsThroughFunction(email);
+    } catch (e) {
+      log('Error checking user existence: $e');
+      return false;
+    }
+  }*/
+  Future<bool> _checkIfUserExists(String email) async {
+    try {
+      // Usar Edge Function
+      final response = await supabase.functions.invoke(
+        'check-user-exists',
+        body: {'email': email},
+      );
+
+      log('Response from edge function: ${response.data}');
+
+      return response.data['exists'] ?? false;
+    } catch (e) {
+      log('Error checking user existence: $e');
+
+      // Fallback: intentar obtener el usuario actual (menos confiable)
+      final currentUser = supabase.auth.currentUser;
+      if (currentUser != null && currentUser.email == email) {
+        return true;
+      }
+
+      return false;
+    }
+  }
+
   _botonIngresar() {
-    final lc = Get.find<LoginController>();
+    //final lc = Get.find<LoginController>();
     return Utils.elevatedButton(
       Helpers.ingresar.toUpperCase(),
       Utils.colorTextoBordesIconos,
       () async {
-        log('Presionaste el boton ingresar');
+        Utils.ocultarTeclado(context);
+        loadingC.setOnLoading();
+        _formKey.currentState!.save();
+        try {
+          if (!_formKey.currentState!.validate()) {
+            Utils.showSnakbarError("Error", 'Existen campos inválidos', 4);
+            return;
+          }
+          await supabase.auth.signInWithPassword(
+            email: _emailController.text.toString(),
+            password: _passwordController.text.toString(),
+          );
+          Get.to(DasboardPage(), duration: Duration(milliseconds: 500));
+          Utils.showSnakbarOK("Bienvenido", "Sesion Iniciada con exito", 4);
+        } catch (e) {
+          Utils.showSnakbarError(
+            "Error al iniciar sesión",
+            "!Datos erroneos verifique correo o contraseña!",
+            4,
+          );
+        } finally {
+          loadingC.setOffLoading();
+        }
       },
       14.0,
     );
+  }
+
+  _botonRegistro() {
+    return Utils.elevatedButton("REGISTRATE", Utils.primaryColor, () {
+      log("presionaste el boton REGISTRAR ::::>");
+      Get.to(RegistroPage(), duration: Duration(milliseconds: 500));
+    });
   }
 
   _inputTextCorreo(String s) {
@@ -174,7 +262,7 @@ class _LoginPageState extends State<LoginPage> {
       suffixIcon: IconButton(
         icon: Icon(
           passwordVisible ? Icons.visibility_off : Icons.visibility,
-          color: Utils.colorAzul(0.8), //color: Color(0xE400581C)
+          color: Utils.colorAzul(0.8),
         ),
         onPressed: () {
           setState(() {

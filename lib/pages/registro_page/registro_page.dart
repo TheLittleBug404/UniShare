@@ -1,7 +1,13 @@
+import 'dart:developer';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
-import 'package:uni_share/pages/registro_valido_page/registro_valido_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uni_share/controllers/loading_controller/loading_controller.dart';
+import 'package:uni_share/pages/home_page/home_page.dart';
+import 'package:uni_share/services/metodos_supabase/metodos_supabase.dart';
 import 'package:uni_share/utils/helpers/helpers.dart';
 import 'package:uni_share/utils/utils/utils.dart';
 import 'package:get/get.dart';
@@ -22,15 +28,20 @@ class _RegistroPageState extends State<RegistroPage> {
   String email = '';
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  final SupabaseClient supabase = Supabase.instance.client;
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _passwordController2 = TextEditingController();
 
+  final loadingC = Get.find<LoadingController>();
+  final metodosSupabase = MetodosSupabase();
+
   @override
   void initState() {
     super.initState();
     _showDialog();
+    metodosSupabase.getSession(supabase);
   }
 
   _showDialog() async {
@@ -69,12 +80,12 @@ class _RegistroPageState extends State<RegistroPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center, //end
-                  mainAxisSize: MainAxisSize.max,
+                  mainAxisSize: MainAxisSize.min,
                   children: <Widget>[
                     Utils.espacio10,
                     SizedBox(
                       height: Get.height * 0.25,
-                      width: Get.width * 0.35,
+                      width: Get.width * 0.55,
                       child: Utils.uniShareLogo(),
                     ),
                     Utils.espacio10,
@@ -98,20 +109,9 @@ class _RegistroPageState extends State<RegistroPage> {
                       style: TextStyle(),
                     ),
                     Utils.espacio20,
-                    _botonValidar(context),
+                    _botonRegistrar(context),
                     Utils.espacio20,
-                    SizedBox(
-                      width: double.infinity,
-                      height: 40.0,
-                      child: Utils.elevatedButton(
-                        "CANCELAR",
-                        Utils.primaryColor,
-                        () {
-                          Navigator.pop(context);
-                        },
-                        14.0,
-                      ),
-                    ),
+                    _botonCancelar(context),
                     Utils.espacio60,
                   ],
                 ),
@@ -225,26 +225,66 @@ class _RegistroPageState extends State<RegistroPage> {
     );
   }
 
-  _botonValidar(BuildContext context) {
+  _botonRegistrar(BuildContext context) {
     return SizedBox(
       width: double.infinity,
       height: 40.0,
-      child: Utils.elevatedButton("VALIDAR", Utils.colorTextoBordesIconos, () {
-        _formKey.currentState!.save();
-        if (!_formKey.currentState!.validate()) {
-          Utils.showSnakbarError("Error", 'Existen campos inválidos', 2);
-          //setState(() => _loading = false);
-        } else if (_passwordController.text != _passwordController2.text) {
-          Utils.showSnakbarError("Error", 'Las contraseñas no son iguales', 2);
-        } else {
-          Get.to(
-            RegistroValidoPage(
-              emailRegistro: _emailController.text,
-              passwordRegistro: _passwordController.text,
-            ),
-          );
-        }
-      }, 14.0),
+      child: Utils.elevatedButton(
+        "REGISTRAR",
+        Utils.colorTextoBordesIconos,
+        () async {
+          Utils.ocultarTeclado(context);
+          loadingC.setOnLoading();
+          log("Loading presionado ${loadingC.getLoading}");
+          _formKey.currentState!.save();
+          try {
+            if (!_formKey.currentState!.validate()) {
+              Utils.showSnakbarError("Error", 'Existen campos inválidos', 4);
+              return;
+            }
+            if (_passwordController.text != _passwordController2.text) {
+              Utils.showSnakbarError(
+                "Error",
+                'Las contraseñas no son iguales',
+                4,
+              );
+              return;
+            }
+            await supabase.auth.signUp(
+              emailRedirectTo: kIsWeb ? null : 'io.supabase.unishare://login-callback',
+              email: _emailController.text.toString(),
+              password: _passwordController.text.toString(),
+            );
+            Get.to(HomePage(), duration: Duration(milliseconds: 500));
+            Utils.showSnakbarOK("Exito", "Cuenta creada revise su correo", 4);
+          } catch (e) {
+            Utils.showSnakbarError(
+              "Error",
+              "!Error al intentar crear cuenta en UniShare!",
+              4,
+            );
+          } finally{
+            loadingC.setOffLoading();
+          }
+        },
+        14.0,
+      ),
+    );
+  }
+
+  _botonCancelar(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 40.0,
+      child: Utils.elevatedButton(
+        "CANCELAR", 
+        Utils.primaryColor, 
+        () {
+          log("presionaste el boton cancelar ::::> ${loadingC.getLoading}");
+          Navigator.pop(context);
+        }, 
+        14.0,
+      ),
     );
   }
 }
