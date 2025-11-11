@@ -9,7 +9,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:loading_overlay/loading_overlay.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uni_share/controllers/loading_controller/loading_controller.dart';
-import 'package:uni_share/pages/dashboard_page/dasboard_page.dart';
+import 'package:uni_share/controllers/login_controller/login_controller.dart';
+import 'package:uni_share/pages/principal_page/principal_page.dart';
 import 'package:uni_share/pages/registro_page/registro_page.dart';
 import 'package:uni_share/utils/helpers/helpers.dart';
 import 'package:uni_share/utils/utils/utils.dart';
@@ -104,13 +105,23 @@ class _LoginPageState extends State<LoginPage> {
       Buttons.google,
       text: "INGRESAR CON GOOGLE",
       onPressed: () async {
+        final lc = Get.find<LoginController>();
         log('Presionaste el boton ingresar con google');
         loadingC.setOnLoading();
+        bool internet = await Utils.hasInternet();
         const webClientId =
             '959671764801-flrr1st5mqcend2ugevies5o6f790bsr.apps.googleusercontent.com';
         const iosClientId =
             '959671764801-mejnufcglfddgpqfi5rvmnnmmp9v9204.apps.googleusercontent.com';
         try {
+          if (!internet) {
+            Utils.showSnakbarSinInternet(
+              "Sin conexión a internet",
+              "Revise su conexión a internet",
+              4,
+            );
+            return;
+          }
           final GoogleSignIn signIn = GoogleSignIn.instance;
           unawaited(
             signIn.initialize(
@@ -128,25 +139,13 @@ class _LoginPageState extends State<LoginPage> {
           if (idToken == null) {
             throw 'No ID Token found.';
           }
-          //verificamos si el email existe y si existe la cuenta
-          /*final email = googleAccount.email;
-          final userExists = await _checkIfUserExists(email);
-          if (!userExists) {
-            await signIn.signOut(); // Cerrar sesión de Google
-            Utils.showSnakbarError(
-              "Error",
-              "Esta cuenta no está registrada. Por favor, regístrate primero.",
-              4,
-            );
-            return;
-          }*/
-          //si existe la cuenta entonces entramos normal
           await supabase.auth.signInWithIdToken(
             provider: OAuthProvider.google,
             idToken: idToken,
             accessToken: accessToken,
           );
-          Get.to(DasboardPage(), duration: Duration(milliseconds: 500));
+          lc.setAuth(true);
+          Get.to(PrincipalPage(), duration: Duration(milliseconds: 500));
           Utils.showSnakbarOK("Bienvenido", "Sesión iniciada con Google", 4);
         } catch (e) {
           Utils.showSnakbarError(
@@ -161,50 +160,25 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  // Función para verificar si el usuario existe
-  /*Future<bool> _checkIfUserExists(String email) async {
-    try {
-      await supabase.auth.admin.listUsers();
-      return await _checkUserExistsThroughFunction(email);
-    } catch (e) {
-      log('Error checking user existence: $e');
-      return false;
-    }
-  }*/
-  Future<bool> _checkIfUserExists(String email) async {
-    try {
-      // Usar Edge Function
-      final response = await supabase.functions.invoke(
-        'check-user-exists',
-        body: {'email': email},
-      );
-
-      log('Response from edge function: ${response.data}');
-
-      return response.data['exists'] ?? false;
-    } catch (e) {
-      log('Error checking user existence: $e');
-
-      // Fallback: intentar obtener el usuario actual (menos confiable)
-      final currentUser = supabase.auth.currentUser;
-      if (currentUser != null && currentUser.email == email) {
-        return true;
-      }
-
-      return false;
-    }
-  }
-
   _botonIngresar() {
-    //final lc = Get.find<LoginController>();
+    final lc = Get.find<LoginController>();
     return Utils.elevatedButton(
       Helpers.ingresar.toUpperCase(),
       Utils.colorTextoBordesIconos,
       () async {
         Utils.ocultarTeclado(context);
         loadingC.setOnLoading();
+        bool internet = await Utils.hasInternet();
         _formKey.currentState!.save();
         try {
+          if (!internet) {
+            Utils.showSnakbarSinInternet(
+              "Sin conexión a internet",
+              "Revise su conexión a internet",
+              4,
+            );
+            return;
+          }
           if (!_formKey.currentState!.validate()) {
             Utils.showSnakbarError("Error", 'Existen campos inválidos', 4);
             return;
@@ -213,7 +187,8 @@ class _LoginPageState extends State<LoginPage> {
             email: _emailController.text.toString(),
             password: _passwordController.text.toString(),
           );
-          Get.to(DasboardPage(), duration: Duration(milliseconds: 500));
+          lc.setAuth(true);
+          Get.to(PrincipalPage(), duration: Duration(milliseconds: 500));
           Utils.showSnakbarOK("Bienvenido", "Sesion Iniciada con exito", 4);
         } catch (e) {
           Utils.showSnakbarError(
@@ -230,7 +205,16 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   _botonRegistro() {
-    return Utils.elevatedButton("REGISTRATE", Utils.primaryColor, () {
+    return Utils.elevatedButton("REGISTRATE", Utils.primaryColor, () async {
+      bool internet = await Utils.hasInternet();
+      if (!internet) {
+        Utils.showSnakbarSinInternet(
+          "Sin conexión a internet",
+          "Revise su conexión a internet",
+          4,
+        );
+        return;
+      }
       log("presionaste el boton REGISTRAR ::::>");
       Get.to(RegistroPage(), duration: Duration(milliseconds: 500));
     });

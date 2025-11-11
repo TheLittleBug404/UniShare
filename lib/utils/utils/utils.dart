@@ -2,9 +2,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
 import 'package:uni_share/controllers/login_controller/login_controller.dart';
 import 'package:uni_share/pages/home_page/home_page.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class Utils {
   static const primaryColor = Color(0xFF1E88E5);
@@ -59,6 +61,13 @@ class Utils {
     return primaryColor;
   }
 
+  static estiloShapeAzul() {
+    return RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(15.0),
+      side: BorderSide(color: Utils.colorAzul(0.9), width: 2.0),
+    );
+  }
+
   //loading carga
   static loadingCustom([double? size]) => Center(
     child: SpinKitCircle(
@@ -72,7 +81,7 @@ class Utils {
   static Widget uniShareLogo() {
     return const FadeInImage(
       placeholder: AssetImage('assets/img/logo_unishare.webp'),
-      image: AssetImage('assets/img/logo_unishare.webp',),
+      image: AssetImage('assets/img/logo_unishare.webp'),
       fadeInDuration: Duration(seconds: 2),
     );
   }
@@ -291,6 +300,31 @@ class Utils {
     );
   }
 
+  static void showSnakbarSinInternet(
+    String titulo,
+    String msg,
+    int duracion, [
+    SnackPosition? position,
+  ]) {
+    Get.snackbar(
+      titulo,
+      msg,
+      titleText: estiloTexto(titulo, 16.0, true, Colors.white),
+      colorText: Colors.white.withValues(alpha: 0.8),
+      snackPosition: position ?? SnackPosition.BOTTOM,
+      backgroundColor: Colors.red.shade900.withValues(alpha: 0.9),
+      borderRadius: 10,
+      margin: const EdgeInsets.all(10),
+      borderColor: Colors.white.withValues(alpha: 0.8),
+      borderWidth: 1,
+      icon: const Padding(
+        padding: EdgeInsets.only(left: 5.0),
+        child: Icon(Icons.wifi_off, color: Colors.white, size: 35.0),
+      ),
+      duration: Duration(seconds: duracion),
+    );
+  }
+
   //estilos de texto
   static Text estiloTexto(
     String txt,
@@ -449,6 +483,26 @@ class Utils {
     );
   }
 
+  static Future showDialogAdaptative(
+    BuildContext context,
+    title,
+    Widget body, [
+    bool? sinBotonok = false,
+  ]) => showAdaptiveDialog(
+    context: context,
+    builder: (context) => AlertDialog.adaptive(
+      title: Utils.estiloTexto(title, 16, true, null, true),
+      contentPadding: EdgeInsets.symmetric(horizontal: 20),
+      content: body,
+      backgroundColor: Get.isDarkMode
+          ? Colors.black.withValues(alpha: 0.7)
+          : colorFondosSecundariosBordesSuaves,
+      actions: sinBotonok!
+          ? []
+          : [elevatedButton("Ok", Utils.primaryColor, () => Get.back(), 16)],
+    ),
+  );
+
   static ElevatedButton elevatedButton(
     String txtboton,
     Color colorBorde,
@@ -461,6 +515,27 @@ class Utils {
     child: Utils.estiloTexto(txtboton, tamanioLetra, true, colorLetra, true),
   );
 
+  static ButtonStyle estiloBotonBordeColor(OutlinedBorder estiloShapeColor) =>
+      ElevatedButton.styleFrom(
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.transparent,
+        disabledForegroundColor: Colors.transparent,
+        shadowColor: Colors.transparent,
+        shape: estiloShapeColor,
+        animationDuration: const Duration(milliseconds: 1),
+      );
+  //estilo de iconos
+  static IconButton iconButton(
+    Color colorBorde,
+    VoidCallback voidCallback,
+    IconData iconData, [
+    double tamanioLetra = 12.0,
+    Color colorLetra = Colors.white,
+  ]) => IconButton(
+    onPressed: voidCallback,
+    icon: Icon(iconData, color: Utils.primaryColor, size: 30),
+  );
+
   //ocultar teclado
   static void ocultarTeclado(BuildContext context) {
     FocusScopeNode currentFocus = FocusScope.of(context);
@@ -468,4 +543,60 @@ class Utils {
       currentFocus.unfocus();
     }
   }
+
+  //Seccion  internet
+  static Future<bool> hasInternet() async {
+    //return await InternetConnectionChecker().hasConnection;
+    final bool isConnected = await InternetConnection().hasInternetAccess;
+    if (isConnected) {
+      print('Connected!');
+      return true;
+    } else {
+      print('No internet connection.');
+      return false;
+    }
+  }
+
+  static Future<void> launchInBrowser(String url) async {
+    if (!await launchUrl(
+      Uri.parse(url),
+      mode: LaunchMode.externalApplication,
+    )) {
+      throw 'Could not launch $url';
+    }
+  }
+
+  //seccion de circular progress Indicator
+  static circulrProgressIndicator([double? size = 45.0]) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
+      child: SizedBox(
+        height: size,
+        width: size,
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(colorPrimario(0.8)),
+          strokeWidth: 4.0,
+        ),
+      ),
+    );
+  }
+
+  //seccion de decorations
+  static boxDecoraton([Color? c, DecorationImage? di]) => BoxDecoration(
+    boxShadow: [
+      BoxShadow(
+        color: Colors.grey.withValues(alpha: 0.3), //color of shadow
+        spreadRadius: 3,
+        blurRadius: 5,
+        offset: const Offset(0, 2),
+      ),
+    ],
+    borderRadius: BorderRadius.circular(10),
+    color:
+        c ??
+        (Get.isDarkMode
+            ? Colors.black.withValues(alpha: 0.5)
+            : Colors.grey.shade100),
+    image: di,
+  );
 }

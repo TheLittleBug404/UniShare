@@ -6,10 +6,10 @@ import 'package:get/get.dart';
 import 'package:uni_share/controllers/loading_controller/loading_controller.dart';
 import 'package:uni_share/controllers/login_controller/login_controller.dart';
 import 'package:uni_share/controllers/navigation_controller/navigation_controller.dart';
-import 'package:uni_share/pages/dashboard_page/dasboard_page.dart';
 import 'package:uni_share/pages/home_page/home_page.dart';
 import 'package:uni_share/pages/loading_page/loading_page.dart';
 import 'package:uni_share/pages/login_page/login_page.dart';
+import 'package:uni_share/pages/principal_page/principal_page.dart';
 import 'package:uni_share/pages/registro_page/registro_page.dart';
 import 'package:uni_share/theme/theme_uni_share.dart';
 import 'package:uni_share/utils/constantes/constantes.dart';
@@ -56,7 +56,7 @@ class MainApp extends StatelessWidget {
         GetPage(name: HomePage.route, page: () => const HomePage()),
         GetPage(name: LoginPage.route, page: () => const LoginPage()),
         GetPage(name: RegistroPage.route, page: () => const RegistroPage()),
-        GetPage(name: DasboardPage.route,page: () => const DasboardPage()),
+        GetPage(name: PrincipalPage.route,page: () => const PrincipalPage()),
       ],
     );
   }

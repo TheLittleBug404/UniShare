@@ -4,7 +4,7 @@ import 'package:loading_overlay/loading_overlay.dart';
 import 'package:uni_share/controllers/login_controller/login_controller.dart';
 import 'package:uni_share/controllers/navigation_controller/navigation_controller.dart';
 import 'package:uni_share/pages/login_page/login_page.dart';
-import 'package:uni_share/pages/main_page/main_page.dart';
+import 'package:uni_share/pages/principal_page/principal_page.dart';
 import 'package:uni_share/utils/utils/utils.dart';
 
 class HomePage extends StatefulWidget {
@@ -175,7 +175,7 @@ class _HomePageState extends State<HomePage> {
       case 2:
         if (!lc.getAuth) {
           Get.to(
-            MainPage(),
+            PrincipalPage(),
             transition: Transition.fadeIn,
             duration: Duration(milliseconds: 500),
           );
@@ -204,6 +204,11 @@ class _HomePageState extends State<HomePage> {
         break;
       case 0:
         if (!lc.getAuth) {
+          bool internet = await Utils.hasInternet();
+          if(!internet){
+            Utils.showSnakbarSinInternet("Sin conexión a internet", "Revise su conexión a internet", 4);
+            return;
+          }
           Get.to(
             LoginPage(),
             transition: Transition.fadeIn,
@@ -211,7 +216,7 @@ class _HomePageState extends State<HomePage> {
           );
         } else {
           Get.to(
-            MainPage(),
+            PrincipalPage(),
             transition: Transition.fadeIn,
             duration: Duration(milliseconds: 500),
           );
