@@ -2,12 +2,12 @@ import 'package:get/get.dart';
 
 class LoginController extends GetxController {
     var auth = false.obs;
-    var idSucursal = "".obs;
-    void setIdSucursal(String idSuc) {
-        idSucursal.value = idSuc;
+    var correo = "".obs;
+    void setCorreo(String idSuc) {
+        correo.value = idSuc;
     }
 
-    String get getIdSucursal => idSucursal.value;
+    String get getCorreo => correo.value;
 
     var fechaReserva = "".obs;
     void setFechaReserva(String fechaRes) {

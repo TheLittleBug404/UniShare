@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:internet_connection_checker_plus/internet_connection_checker_plus.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uni_share/controllers/login_controller/login_controller.dart';
 import 'package:uni_share/pages/home_page/home_page.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -186,21 +187,26 @@ class Utils {
 
   static void showConfirmCloseApp(String titulo, String msg) {
     final lc = Get.find<LoginController>();
+    final SupabaseClient supabase = Supabase.instance.client;
     Get.defaultDialog(
       title: titulo,
       content: Text(msg, style: TextStyle(color: Utils.colorTextoBordesIconos)),
       actions: <Widget>[
         TextButton(
           style: TextButton.styleFrom(backgroundColor: colorTextoBordesIconos),
-          onPressed: () async {
-            lc.setAuth(false);
-            // await DBProvider.db.deleteTable(Constantes.tablaUsuario);
-            // await DBProvider.db.deleteTable(Constantes.tablaTokenFireBase);
-            // if (Platform.isAndroid) {
-            //   await LoginServiceGoogle().logoutGoogle();
-            // }
-            Get.back();
-            Get.offAllNamed(HomePage.route);
+          onPressed: (){
+            try {
+              lc.setAuth(false);
+              supabase.auth.signOut();
+              lc.setCorreo("");
+              lc.setNameGoogle("");
+              lc.setPhotoGoogle("");
+              Get.back();
+              Get.offAllNamed(HomePage.route);
+              Utils.showSnakbarOK("Exito", "Sesión cerrada con Exito", 4);
+            } catch (e) {
+              Utils.showSnakbarError("Error", "Paso algo al cerrar tu sesion intentalo más tarde.", 4);
+            }
           },
           child: estiloTexto('Aceptar', 14.0, true, Colors.white),
         ),
@@ -549,10 +555,10 @@ class Utils {
     //return await InternetConnectionChecker().hasConnection;
     final bool isConnected = await InternetConnection().hasInternetAccess;
     if (isConnected) {
-      print('Connected!');
+      //print('Connected!');
       return true;
     } else {
-      print('No internet connection.');
+      //print('No internet connection.');
       return false;
     }
   }

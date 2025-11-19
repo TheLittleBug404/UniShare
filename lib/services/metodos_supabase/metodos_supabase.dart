@@ -3,14 +3,14 @@ class MetodosSupabase {
   void getSession(SupabaseClient supabase) {
     supabase.auth.onAuthStateChange.listen((data) {
       final AuthChangeEvent event = data.event;
-      final Session? session = data.session;
-      print('event: $event, session: $session');
+      //final Session? session = data.session;
+      //print('event: $event, session: $session');
       switch (event) {
         case AuthChangeEvent.initialSession:
-        print('initial sesion');
+        //print('initial sesion');
         // handle initial session
         case AuthChangeEvent.signedIn:
-        print('signed In');
+        //print('signed In');
         // handle signed in
         case AuthChangeEvent.signedOut:
         // handle signed out
@@ -20,10 +20,11 @@ class MetodosSupabase {
         // handle token refreshed
         case AuthChangeEvent.userUpdated:
         // handle user updated
+        // ignore: deprecated_member_use
         case AuthChangeEvent.userDeleted:
         // handle user deleted
         case AuthChangeEvent.mfaChallengeVerified:
-        print('FMA');
+        //print('FMA');
         // handle mfa challenge verified
       }
     });

@@ -1,5 +1,8 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:uni_share/controllers/material_controller/material_controller.dart';
+import 'package:uni_share/controllers/navigation_controller/navigation_controller.dart';
 import 'package:uni_share/utils/utils/utils.dart';
 import 'package:uni_share/widgets/custom_expansion_tile/custom_expansion_tile.dart';
 import 'package:uni_share/widgets/custom_scroll_view_widget/custom_scrollview_widget.dart';
@@ -159,18 +162,14 @@ class ListaMateriasState extends State<ListaMaterias> {
                         true,
                       ),
                     ),
-                    Utils.iconButton(
-                      Utils.primaryColor, 
-                      () {
-                        Utils.showAwesomeDialog(
-                          "Busque la materia por sigla o nombre",
-                          Text(
-                            'Puede buscar materias por:\n• Nombre (ej: "Programacion")\n• Sigla (ej: "INF-111", "inf 111", "inf111")',
-                          ),
-                        );
-                      }, 
-                      Icons.help
-                    ),
+                    Utils.iconButton(Utils.primaryColor, () {
+                      Utils.showAwesomeDialog(
+                        "Busque la materia por sigla o nombre",
+                        Text(
+                          'Puede buscar materias por:\n• Nombre (ej: "Programacion")\n• Sigla (ej: "INF-111", "inf 111", "inf111")',
+                        ),
+                      );
+                    }, Icons.help),
                   ],
                 ),
                 Utils.espacio10,
@@ -196,11 +195,7 @@ class ListaMateriasState extends State<ListaMaterias> {
                           onPressed: _limpiarBusqueda,
                           child: Row(
                             children: [
-                              Icon(
-                                Icons.clear,
-                                size: 16,
-                                color: Colors.white,
-                              ),
+                              Icon(Icons.clear, size: 16, color: Colors.white),
                               const SizedBox(width: 4),
                               Utils.estiloTexto(
                                 "Limpiar",
@@ -340,7 +335,7 @@ class ListaMateriasState extends State<ListaMaterias> {
         Padding(
           padding: const EdgeInsets.all(10.0),
           child: Container(
-            height: 150,
+            height: 200,
             width: double.infinity,
             decoration: BoxDecoration(
               color: Utils.colorFondosSecundariosBordesSuaves,
@@ -349,7 +344,12 @@ class ListaMateriasState extends State<ListaMaterias> {
                 color: Utils.colorFondosSecundariosBordesSuaves,
               ),
             ),
-            child: Center(child: botonesMaterias()),
+            child: Center(
+              child: BotonesMaterias(
+                sigla: sigla, 
+                nombre: titulo, 
+                )
+            ),
           ),
         ),
       ],
@@ -407,8 +407,23 @@ class ListaMateriasState extends State<ListaMaterias> {
   }
 }
 
-class botonesMaterias extends StatelessWidget {
-  const botonesMaterias({super.key});
+class BotonesMaterias extends StatelessWidget {
+  final String sigla;
+  final String nombre;
+  const BotonesMaterias({
+    super.key,
+    required this.sigla,
+    required this.nombre,
+  });
+
+  void _verMaterial(BuildContext context,String sigla,String nombre,String tipo) {
+    final nc = Get.find<NavigationController>();
+    final mc = Get.find<MaterialController>();
+    mc.setSigla(sigla);
+    mc.setNombre(nombre);
+    mc.setTipo(tipo);
+    nc.setIndexPage(5);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -424,12 +439,12 @@ class botonesMaterias extends StatelessWidget {
               Utils.elevatedButton(
                 'Ver Codigo',
                 Utils.colorTextoBordesIconos,
-                () {},
+                () => _verMaterial(context, sigla, nombre,'Código'),
               ),
               Utils.elevatedButton(
                 'Ver Libros',
                 Utils.colorTextoBordesIconos,
-                () {},
+                () => _verMaterial(context, sigla, nombre,'Libro'),
               ),
             ],
           ),
@@ -440,15 +455,25 @@ class botonesMaterias extends StatelessWidget {
               Utils.elevatedButton(
                 'Ver Praticas',
                 Utils.colorTextoBordesIconos,
-                () {},
+                () => _verMaterial(context, sigla, nombre,'Práctica'),
               ),
               Utils.elevatedButton(
                 'Ver Enlaces',
                 Utils.colorTextoBordesIconos,
-                () {},
+                () => _verMaterial(context, sigla, nombre,'Enlace'),
               ),
             ],
           ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Utils.elevatedButton(
+                'Ver Examenes pasados',
+                Utils.colorTextoBordesIconos,
+                () => _verMaterial(context, sigla, nombre,'Examen'),
+              ),
+            ],
+          )
         ],
       ),
     );

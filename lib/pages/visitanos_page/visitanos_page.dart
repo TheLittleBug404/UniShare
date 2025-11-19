@@ -446,6 +446,7 @@ class _VisitanosPageState extends State<VisitanosPage> {
       ),
     );
   }
+
   Widget _buildMap() {
     final markerLayer = MarkerLayer(
       markers: [

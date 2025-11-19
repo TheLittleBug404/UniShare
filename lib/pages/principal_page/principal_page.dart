@@ -5,9 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:get/get.dart';
 import 'package:uni_share/controllers/login_controller/login_controller.dart';
+import 'package:uni_share/controllers/material_controller/material_controller.dart';
 import 'package:uni_share/controllers/navigation_controller/navigation_controller.dart';
 import 'package:uni_share/pages/home_page/home_page.dart';
 import 'package:uni_share/pages/libros_page/libros_page.dart';
+import 'package:uni_share/pages/lista_material_page/lista_material_page.dart';
 import 'package:uni_share/pages/materias_carrera_page/materias_carrera_page.dart';
 import 'package:uni_share/pages/notificaciones_page/notificaciones_page.dart';
 import 'package:uni_share/pages/subir_material_page/subir_material_page.dart';
@@ -33,8 +35,8 @@ class _PrincipalPageState extends State<PrincipalPage> {
   final List<TabItem> _botones = [];
 
   final lc = Get.find<LoginController>();
+  final mc = Get.find<MaterialController>();
   int indexNav = 0;
-  //late ConvexTabController tabController = ConvexTabController();
 
   @override
   void initState() {
@@ -59,6 +61,13 @@ class _PrincipalPageState extends State<PrincipalPage> {
       NotificacionesPage(),
       SubirMaterialPage(),
       LibrosPage(),
+      Obx(() =>
+        ListaMaterialPage(
+          siglaMateria: mc.getSigla,
+          nombreMateria: mc.getNombre,
+          tipoMaterial: mc.getTipo,
+        ),
+      ),
     ];
     List<String> pagesRutas = const <String>[
       "",
@@ -69,10 +78,7 @@ class _PrincipalPageState extends State<PrincipalPage> {
       SubirMaterialPage.route,
     ];
     List<TabItem> botonesItems = <TabItem>[
-      TabItem(
-        icon: VisitanosPage.icon,
-        title: VisitanosPage.titlePage,
-      ),
+      TabItem(icon: VisitanosPage.icon, title: VisitanosPage.titlePage),
       TabItem(
         icon: MateriasCarreraPage.icon,
         title: MateriasCarreraPage.smallTitlePage,
@@ -91,32 +97,34 @@ class _PrincipalPageState extends State<PrincipalPage> {
       _botones.clear();
       _botones.addAll(botonesItems);
     }
-    return Obx(
-      () => Scaffold(
-        endDrawer: _createDrawer(_pagesRoutes.elementAt(nc.getIndexPage)),
-        backgroundColor: Get.isDarkMode ? Colors.black : Colors.white,
-        body: _widgetOptions.elementAt(nc.getIndexPage),
-        bottomNavigationBar: StyleProvider(
-          style: Style(),
-          child: ConvexAppBar(
-            curveSize: 80,
-            initialActiveIndex: 0,
-            top: -17,
-            color: Colors.white,
-            backgroundColor: Utils.colorTextoBordesIconos,
-            height: Get.height * 0.08,
-            items: _botones,
-            onTap: (index) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                nc.setIndexPage(index);
-              });
-              log("imprimiendo index $index");
-              if (index != nc.getIndexPage) {}
-              setState(() {});
-            },
+    return SafeArea(
+      child: Obx(() {
+        return Scaffold(
+          endDrawer: _createDrawer(_pagesRoutes.elementAt(nc.getIndexPage)),
+          backgroundColor: Get.isDarkMode ? Colors.black : Colors.white,
+          body: _widgetOptions.elementAt(nc.getIndexPage),
+          bottomNavigationBar: StyleProvider(
+            style: Style(),
+            child: ConvexAppBar(
+              curveSize: 80,
+              initialActiveIndex: 0,
+              top: -17,
+              color: Colors.white,
+              backgroundColor: Utils.colorTextoBordesIconos,
+              height: Get.height * 0.08,
+              items: _botones,
+              onTap: (index) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  nc.setIndexPage(index);
+                });
+                log("imprimiendo index $index");
+                if (index != nc.getIndexPage) {}
+                setState(() {});
+              },
+            ),
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 
@@ -159,13 +167,13 @@ class _PrincipalPageState extends State<PrincipalPage> {
                         SubirMaterialPage.icon,
                         3,
                       ),
-                      _creaItemSubMenu(
+                      /*_creaItemSubMenu(
                         LibrosPage.titlePage,
                         routeCurrent,
                         LibrosPage.route,
                         LibrosPage.icon,
                         4,
-                      ),
+                      ),*/
                       lc.getAuth
                           ? _creaItemSubMenu(
                               "Cerrar sesión",
@@ -213,15 +221,11 @@ class _PrincipalPageState extends State<PrincipalPage> {
       ),
       leading: rutaPage.isEmpty
           ? SizedBox.shrink()
-          : Icon(
-              Icons.chevron_left,
-              size: 20,
-              color: Utils.colorAzul(0.9), //Utils.colorGuindo(0.9)
-            ),
+          : Icon(Icons.chevron_left, size: 20, color: Utils.colorAzul(0.9)),
       title: ruta == rutaPage
           ? Utils.estiloTexto(titulo, 12, false, Utils.colorAzul(0.9))
           : Utils.estiloTexto(titulo, 12, false, Utils.colorTextoBordesIconos),
-      selected: ruta == rutaPage, //Color opción seleccionada
+      selected: ruta == rutaPage,
       splashColor: Utils.colorFondoSecundario(0.5),
       enabled: ruta != rutaPage ? true : false,
       onTap: () async {
@@ -266,7 +270,7 @@ class _PrincipalPageState extends State<PrincipalPage> {
       height: 200,
       child: UserAccountsDrawerHeader(
         decoration: BoxDecoration(color: Utils.primaryColor),
-        accountName: lc.getNameGoogle != "null"
+        accountName: lc.getNameGoogle != ""
             ? Utils.estiloTexto(
                 lc.getNameGoogle,
                 12.0,
@@ -279,12 +283,7 @@ class _PrincipalPageState extends State<PrincipalPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             if (lc.getAuth) ...[
-              Utils.estiloTexto("Usuario", 12.0, false, Colors.white),
-            ] else ...[
-              const Text(
-                'Visitante',
-                style: TextStyle(color: Utils.colorTextoBordesIconos),
-              ),
+              Utils.estiloTexto(lc.getCorreo, 12.0, false, Colors.white),
             ],
           ],
         ),
@@ -303,10 +302,7 @@ class _PrincipalPageState extends State<PrincipalPage> {
         ),
         onDetailsPressed: lc.getAuth
             ? () async {
-                Utils.showAwesomeDialog(
-                  DatosUsuario.titlePage,
-                  DatosUsuario(),
-                );
+                Utils.showAwesomeDialog(DatosUsuario.titlePage, DatosUsuario());
               }
             : null,
       ),

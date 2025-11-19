@@ -12,6 +12,7 @@ import 'package:uni_share/controllers/loading_controller/loading_controller.dart
 import 'package:uni_share/controllers/login_controller/login_controller.dart';
 import 'package:uni_share/pages/principal_page/principal_page.dart';
 import 'package:uni_share/pages/registro_page/registro_page.dart';
+import 'package:uni_share/services/database/database_usuarios/database_usuarios.dart';
 import 'package:uni_share/utils/helpers/helpers.dart';
 import 'package:uni_share/utils/utils/utils.dart';
 import 'package:sign_in_button/sign_in_button.dart';
@@ -139,14 +140,37 @@ class _LoginPageState extends State<LoginPage> {
           if (idToken == null) {
             throw 'No ID Token found.';
           }
-          await supabase.auth.signInWithIdToken(
-            provider: OAuthProvider.google,
-            idToken: idToken,
-            accessToken: accessToken,
+          bool existeCorreo = await DatabaseUsuarios().readCorreo(
+            googleAccount.email
           );
-          lc.setAuth(true);
-          Get.to(PrincipalPage(), duration: Duration(milliseconds: 500));
-          Utils.showSnakbarOK("Bienvenido", "Sesión iniciada con Google", 4);
+          if (existeCorreo) {
+            var a = await supabase.auth.signInWithIdToken(
+              provider: OAuthProvider.google,
+              idToken: idToken,
+              accessToken: accessToken,
+            );
+            final imagenCorreo = googleAccount.photoUrl ?? '';
+            lc.setAuth(true);
+            log(
+              "Mostrando auth signInWithIdToken EMAIL ::::> ${a.user!.email}",
+            );
+            log(
+              "Mostrando auth signInWithIdToken EMAIL ::::> ${a.user}",
+            );
+            lc.setCorreo(a.user!.email!);
+            var nombre = await DatabaseUsuarios().readNombreUsuario();
+            lc.setNameGoogle(nombre?.nombres ?? "");
+            log("Imagen correo :::::> $imagenCorreo");
+            lc.setPhotoGoogle(imagenCorreo);
+            Get.to(PrincipalPage(), duration: Duration(milliseconds: 500));
+            Utils.showSnakbarOK("Bienvenido", "Sesión iniciada con Exito", 4);
+          } else {
+            Utils.showSnakbarError(
+              "Cuenta no encontrada",
+              "Este correo no está registrado. Por favor, crea una cuenta primero",
+              4,
+            );
+          }
         } catch (e) {
           Utils.showSnakbarError(
             "Error",
@@ -187,7 +211,13 @@ class _LoginPageState extends State<LoginPage> {
             email: _emailController.text.toString(),
             password: _passwordController.text.toString(),
           );
+          final GoogleSignIn signIn = GoogleSignIn.instance;
+          final googleAccount = await signIn.authenticate();
+          final imagenCorreo = googleAccount.photoUrl ?? '';
+          log("Imagen correo :::::> $imagenCorreo");
           lc.setAuth(true);
+          lc.setCorreo(_emailController.text);
+          lc.setPhotoGoogle(imagenCorreo);
           Get.to(PrincipalPage(), duration: Duration(milliseconds: 500));
           Utils.showSnakbarOK("Bienvenido", "Sesion Iniciada con exito", 4);
         } catch (e) {

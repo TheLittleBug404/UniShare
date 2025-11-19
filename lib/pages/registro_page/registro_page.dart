@@ -1,12 +1,13 @@
 import 'dart:developer';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:loading_overlay/loading_overlay.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uni_share/controllers/loading_controller/loading_controller.dart';
 import 'package:uni_share/pages/home_page/home_page.dart';
+import 'package:uni_share/services/database/database_usuarios/database_usuarios.dart';
 import 'package:uni_share/services/metodos_supabase/metodos_supabase.dart';
 import 'package:uni_share/utils/helpers/helpers.dart';
 import 'package:uni_share/utils/utils/utils.dart';
@@ -33,6 +34,10 @@ class _RegistroPageState extends State<RegistroPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _passwordController2 = TextEditingController();
+  final TextEditingController _ciController = TextEditingController();
+  final TextEditingController _nombresController = TextEditingController();
+  final TextEditingController _apellidosController = TextEditingController();
+  final TextEditingController _telefonoController = TextEditingController();
 
   final loadingC = Get.find<LoadingController>();
   final metodosSupabase = MetodosSupabase();
@@ -68,58 +73,224 @@ class _RegistroPageState extends State<RegistroPage> {
         onTap: () {
           FocusScope.of(context).unfocus();
         },
-        child: Stack(
-          children: <Widget>[
-            Utils.fondo(),
-            SingleChildScrollView(
-              padding: const EdgeInsets.all(20.0),
-              physics: const BouncingScrollPhysics(),
-              scrollDirection: Axis.vertical,
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center, //end
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Utils.espacio10,
-                    SizedBox(
-                      height: Get.height * 0.25,
-                      width: Get.width * 0.55,
-                      child: Utils.uniShareLogo(),
+        child: Obx(
+          () => LoadingOverlay(
+            progressIndicator: Utils.loadingCustom(),
+            color: Colors.white.withValues(alpha: 0.6),
+            isLoading: loadingC.getLoading,
+            child: Stack(
+              children: <Widget>[
+                Utils.fondo(),
+                SingleChildScrollView(
+                  padding: const EdgeInsets.all(20.0),
+                  physics: const BouncingScrollPhysics(),
+                  scrollDirection: Axis.vertical,
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        Utils.espacio10,
+                        SizedBox(
+                          height: Get.height * 0.20,
+                          width: Get.width * 0.55,
+                          child: Utils.uniShareLogo(),
+                        ),
+                        Utils.espacio10,
+                        Center(
+                          child: Utils.estiloTexto(
+                            RegistroPage.titlePage,
+                            20.0,
+                            true,
+                          ),
+                        ),
+                        Utils.espacio20,
+                        _buildPersonalInfoSection(),
+                        Utils.espacio20,
+                        _buildAccountInfoSection(),
+                        Utils.espacio20,
+                        _botonRegistrar(context),
+                        Utils.espacio10,
+                        _botonCancelar(context),
+                        Utils.espacio40,
+                      ],
                     ),
-                    Utils.espacio10,
-                    Center(
-                      child: Utils.estiloTexto(
-                        RegistroPage.titlePage,
-                        20.0,
-                        true,
-                      ),
-                    ),
-                    Utils.espacio20,
-                    inputTextCorreo(),
-                    Utils.espacio20,
-                    inputTextPassword(),
-                    Utils.espacio10,
-                    inputTextPasswordConfirm(),
-                    Utils.espacio20,
-                    const Text(
-                      'La contraseña debe tener de 6 a 12 caracteres y debe contener al menos una letra mayúscula y un número. ',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(),
-                    ),
-                    Utils.espacio20,
-                    _botonRegistrar(context),
-                    Utils.espacio20,
-                    _botonCancelar(context),
-                    Utils.espacio60,
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildPersonalInfoSection() {
+    return Column(
+      children: [
+        _sectionTitle('Información Personal'),
+        Utils.espacio15,
+        inputTextCI(),
+        Utils.espacio15,
+        inputTextNombres(),
+        Utils.espacio15,
+        inputTextApellidos(),
+        Utils.espacio15,
+        inputTextTelefono(),
+      ],
+    );
+  }
+
+  Widget _buildAccountInfoSection() {
+    return Column(
+      children: [
+        _sectionTitle('Información de la Cuenta'),
+        Utils.espacio15,
+        inputTextCorreo(),
+        Utils.espacio15,
+        inputTextPassword(),
+        Utils.espacio10,
+        inputTextPasswordConfirm(),
+        Utils.espacio10,
+        const Text(
+          'La contraseña debe tener de 6 a 12 caracteres y debe contener al menos una letra mayúscula y un número.',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+      ],
+    );
+  }
+
+  Widget _sectionTitle(String title) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Utils.colorAzul(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Utils.colorAzul(0.3), width: 1),
+      ),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+          color: Utils.colorAzul(0.8),
+        ),
+      ),
+    );
+  }
+
+  Widget inputTextCI() {
+    return FormBuilderTextField(
+      name: "ci",
+      controller: _ciController,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      style: Utils.estiloLetraInput(),
+      decoration: Utils.estiloInputTextFiledLogin('Cédula de Identidad', true),
+      validator: FormBuilderValidators.compose([
+        FormBuilderValidators.required(errorText: Helpers.errorCampoRequerido),
+        FormBuilderValidators.numeric(
+          errorText: 'La CI debe contener solo números',
+        ),
+        FormBuilderValidators.minLength(
+          6,
+          errorText: 'La CI debe tener al menos 6 dígitos',
+        ),
+        FormBuilderValidators.maxLength(
+          15,
+          errorText: 'La CI no puede exceder 15 dígitos',
+        ),
+      ]),
+      keyboardType: TextInputType.number,
+    );
+  }
+
+  Widget inputTextNombres() {
+    return FormBuilderTextField(
+      name: "nombres",
+      controller: _nombresController,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      style: Utils.estiloLetraInput(),
+      decoration: Utils.estiloInputTextFiledLogin('Nombres', true),
+      validator: FormBuilderValidators.compose([
+        FormBuilderValidators.required(errorText: Helpers.errorCampoRequerido),
+        FormBuilderValidators.minLength(
+          2,
+          errorText: 'Los nombres deben tener al menos 2 caracteres',
+        ),
+        FormBuilderValidators.maxLength(
+          50,
+          errorText: 'Los nombres no pueden exceder 50 caracteres',
+        ),
+        (value) {
+          if (value == null || value.isEmpty) return null;
+          final regex = RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$');
+          if (!regex.hasMatch(value)) {
+            return 'Los nombres solo pueden contener letras y espacios';
+          }
+          return null;
+        },
+      ]),
+      keyboardType: TextInputType.text,
+    );
+  }
+
+  Widget inputTextApellidos() {
+    return FormBuilderTextField(
+      name: "apellidos",
+      controller: _apellidosController,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      style: Utils.estiloLetraInput(),
+      decoration: Utils.estiloInputTextFiledLogin('Apellidos', true),
+      validator: FormBuilderValidators.compose([
+        FormBuilderValidators.required(errorText: Helpers.errorCampoRequerido),
+        FormBuilderValidators.minLength(
+          2,
+          errorText: 'Los apellidos deben tener al menos 2 caracteres',
+        ),
+        FormBuilderValidators.maxLength(
+          50,
+          errorText: 'Los apellidos no pueden exceder 50 caracteres',
+        ),
+        (value) {
+          if (value == null || value.isEmpty) return null;
+          // Permite letras, espacios, guiones y caracteres acentuados
+          final regex = RegExp(r'^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]+$');
+          if (!regex.hasMatch(value)) {
+            return 'Los apellidos solo pueden contener letras, espacios y guiones';
+          }
+          return null;
+        },
+      ]),
+      keyboardType: TextInputType.text,
+    );
+  }
+
+  Widget inputTextTelefono() {
+    return FormBuilderTextField(
+      name: "telefono",
+      controller: _telefonoController,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      style: Utils.estiloLetraInput(),
+      decoration: Utils.estiloInputTextFiledLogin('Teléfono/Celular', true),
+      validator: FormBuilderValidators.compose([
+        FormBuilderValidators.required(errorText: Helpers.errorCampoRequerido),
+        FormBuilderValidators.numeric(
+          errorText: 'El teléfono debe contener solo números',
+        ),
+        FormBuilderValidators.minLength(
+          7,
+          errorText: 'El teléfono debe tener al menos 7 dígitos',
+        ),
+        FormBuilderValidators.maxLength(
+          15,
+          errorText: 'El teléfono no puede exceder 15 dígitos',
+        ),
+      ]),
+      keyboardType: TextInputType.phone,
     );
   }
 
@@ -149,9 +320,7 @@ class _RegistroPageState extends State<RegistroPage> {
       suffixIcon: IconButton(
         icon: Icon(
           passwordVisible ? Icons.visibility_off : Icons.visibility,
-          color: Utils.colorAzul(
-            0.8,
-          ), //color: Color(0xE400581C), // Color verde
+          color: Utils.colorAzul(0.8),
         ),
         onPressed: () {
           setState(() {
@@ -195,9 +364,7 @@ class _RegistroPageState extends State<RegistroPage> {
       suffixIcon: IconButton(
         icon: Icon(
           passwordVisible2 ? Icons.visibility_off : Icons.visibility,
-          color: Utils.colorAzul(
-            0.8,
-          ), //color: Color(0xE400581C), // Color verde
+          color: Utils.colorAzul(0.8),
         ),
         onPressed: () {
           setState(() {
@@ -216,10 +383,8 @@ class _RegistroPageState extends State<RegistroPage> {
       obscureText: passwordVisible2,
       style: Utils.estiloLetraInput(),
       decoration: newDecoration,
-      // onChanged: FormBuilderValidators.equal(_passwordController.text,       errorText: Helpers.errorContraseniaNoCoincide),
       validator: FormBuilderValidators.compose([
         FormBuilderValidators.required(errorText: Helpers.errorCampoRequerido),
-        //FormBuilderValidators.equal(_passwordController.text,            errorText: Helpers.errorContraseniaNoCoincide),
       ]),
       keyboardType: TextInputType.text,
     );
@@ -250,20 +415,35 @@ class _RegistroPageState extends State<RegistroPage> {
               );
               return;
             }
-            await supabase.auth.signUp(
-              emailRedirectTo: kIsWeb ? null : 'io.supabase.unishare://login-callback',
+            final authResponse = await supabase.auth.signUp(
+              emailRedirectTo: kIsWeb
+                  ? null
+                  : 'io.supabase.unishare://login-callback',
               email: _emailController.text.toString(),
               password: _passwordController.text.toString(),
             );
+            if (authResponse.user != null) {
+              final userId = authResponse.user!.id;
+              log("Usuario registrado en Auth, ID: $userId");
+              final databaseUsuarios = DatabaseUsuarios();
+              await databaseUsuarios.crearUsuario(
+                _emailController.text.toString(),
+                _ciController.text.toString(),
+                _nombresController.text.toString(),
+                _apellidosController.text.toString(),
+                _telefonoController.text.toString(),
+                userId, // Pasar el userId que nos devolvió el signUp
+              );
+            }
             Get.to(HomePage(), duration: Duration(milliseconds: 500));
-            Utils.showSnakbarOK("Exito", "Cuenta creada revise su correo", 4);
+            Utils.showSnakbarOK("Éxito", "Cuenta creada correctamente revise su correo electronico.", 4);
           } catch (e) {
             Utils.showSnakbarError(
               "Error",
-              "!Error al intentar crear cuenta en UniShare!",
+              "¡Error al intentar crear cuenta en UniShare!",
               4,
             );
-          } finally{
+          } finally {
             loadingC.setOffLoading();
           }
         },
@@ -276,15 +456,10 @@ class _RegistroPageState extends State<RegistroPage> {
     return SizedBox(
       width: double.infinity,
       height: 40.0,
-      child: Utils.elevatedButton(
-        "CANCELAR", 
-        Utils.primaryColor, 
-        () {
-          log("presionaste el boton cancelar ::::> ${loadingC.getLoading}");
-          Navigator.pop(context);
-        }, 
-        14.0,
-      ),
+      child: Utils.elevatedButton("CANCELAR", Utils.primaryColor, () {
+        log("presionaste el boton cancelar ::::> ${loadingC.getLoading}");
+        Navigator.pop(context);
+      }, 14.0),
     );
   }
 }

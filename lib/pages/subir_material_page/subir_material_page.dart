@@ -1,9 +1,13 @@
 import 'dart:developer';
-
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:loading_overlay/loading_overlay.dart';
 import 'package:uni_share/controllers/loading_controller/loading_controller.dart';
+import 'package:uni_share/services/database/database_materia/database_materia.dart';
+import 'package:uni_share/services/database/database_material/database_material.dart';
+import 'package:uni_share/services/database/database_pertenece/database_pertenece.dart';
+import 'package:uni_share/services/storage/storage_services.dart';
 import 'package:uni_share/utils/constantes/constantes.dart';
 import 'package:uni_share/utils/utils/utils.dart';
 import 'package:uni_share/widgets/custom_scroll_view_widget/custom_scrollview_widget.dart';
@@ -33,6 +37,9 @@ class SubirMaterialPageState extends State<SubirMaterialPage> {
   String? _nombreMateriaSeleccionado;
   String _tipoMaterialSeleccionado = 'Código';
   String _semestreSeleccionado = 'Primer semestre';
+  //String path = "";
+  PlatformFile? _archivoSeleccionado;
+  //String _urlArchivo = "";
 
   // Listas para dropdowns
   final List<String> _tiposMaterial = [
@@ -156,7 +163,9 @@ class SubirMaterialPageState extends State<SubirMaterialPage> {
       silverList: SliverList(
         delegate: SliverChildBuilderDelegate((BuildContext context, int index) {
           return _subBody();
-        }, childCount: 1),
+        }, 
+        childCount: 1
+        ),
       ),
     );
   }
@@ -544,40 +553,176 @@ class SubirMaterialPageState extends State<SubirMaterialPage> {
           ),
         ),
         const SizedBox(height: 6),
-        GestureDetector(
-          onTap: _seleccionarArchivoDialog,
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+
+        // Mostrar miniatura si hay archivo seleccionado
+        if (_archivoSeleccionado != null)
+          _miniaturaArchivo()
+        else
+          _selectorArchivoVacio(),
+      ],
+    );
+  }
+
+  Widget _miniaturaArchivo() {
+    if (_archivoSeleccionado == null) return _selectorArchivoVacio();
+
+    String extension = _archivoSeleccionado!.extension?.toLowerCase() ?? 'file';
+    String nombreArchivo = _archivoSeleccionado!.name;
+    int tamanoKB = (_archivoSeleccionado!.size / 1024).round();
+
+    // Determinar icono según la extensión
+    IconData icono;
+    Color colorIcono;
+
+    switch (extension) {
+      case 'pdf':
+        icono = Icons.picture_as_pdf;
+        colorIcono = Colors.red;
+        break;
+      case 'doc':
+      case 'docx':
+        icono = Icons.description;
+        colorIcono = Colors.blue;
+        break;
+      case 'ppt':
+      case 'pptx':
+        icono = Icons.slideshow;
+        colorIcono = Colors.orange;
+        break;
+      case 'txt':
+        icono = Icons.text_fields;
+        colorIcono = Colors.grey;
+        break;
+      case 'zip':
+      case 'rar':
+        icono = Icons.folder_zip;
+        colorIcono = Colors.amber;
+        break;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+        icono = Icons.image;
+        colorIcono = Colors.green;
+        break;
+      default:
+        icono = Icons.insert_drive_file;
+        colorIcono = Utils.colorTextoBordesIconos;
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white70,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Utils.colorTextoBordesIconos.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        children: [
+          // Icono del tipo de archivo
+          Container(
+            width: 50,
+            height: 50,
             decoration: BoxDecoration(
-              color: Utils.colorFondoSecundario(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: Utils.colorTextoBordesIconos.withValues(alpha: 0.3),
-                style: BorderStyle.solid,
-              ),
+              color: colorIcono.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: colorIcono.withValues(alpha: 0.3)),
             ),
+            child: Icon(icono, color: colorIcono, size: 30),
+          ),
+
+          const SizedBox(width: 12),
+
+          // Información del archivo
+          Expanded(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.cloud_upload,
-                  size: 48,
-                  color: Colors
-                      .white, //Utils.colorTextoBordesIconos.withValues(alpha: 0.6),
-                ),
-                const SizedBox(height: 8),
                 Text(
-                  "Toca para seleccionar un archivo",
+                  nombreArchivo,
                   style: TextStyle(
-                    color: Colors.white, //Utils.colorTextoBordesIconos,
-                    fontWeight: FontWeight.w500,
+                    color: Colors.black,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Tipo: ${extension.toUpperCase()} • $tamanoKB KB",
+                  style: TextStyle(color: Colors.black, fontSize: 12),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "ARCHIVO SELECCIONADO (No subido)",
+                  style: TextStyle(
+                    color: Colors.orange.shade700,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
           ),
+
+          // Botón para cambiar archivo
+          IconButton(
+            onPressed: _seleccionarArchivoDialog,
+            icon: Icon(Icons.edit, color: Utils.primaryColor, size: 20),
+            tooltip: "Cambiar archivo",
+          ),
+
+          // Botón para eliminar archivo
+          IconButton(
+            onPressed: () {
+              setState(() {
+                _archivoSeleccionado = null;
+              });
+            },
+            icon: Icon(
+              Icons.delete,
+              color: Utils.colorTextoBordesIconos,
+              size: 20,
+            ),
+            tooltip: "Eliminar archivo",
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _selectorArchivoVacio() {
+    return GestureDetector(
+      onTap: _seleccionarArchivoDialog,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        decoration: BoxDecoration(
+          color: Utils.colorFondoSecundario(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Utils.colorTextoBordesIconos.withValues(alpha: 0.3),
+            style: BorderStyle.solid,
+          ),
         ),
-      ],
+        child: Column(
+          children: [
+            Icon(Icons.cloud_upload, size: 48, color: Colors.white),
+            const SizedBox(height: 8),
+            Text(
+              "Toca para seleccionar un archivo",
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -702,17 +847,15 @@ class SubirMaterialPageState extends State<SubirMaterialPage> {
                       ),
                       const SizedBox(height: 8),
                       _buildFormatItem("PDF", "Documentos"),
-                      _buildFormatItem("Enlaces", "Tutoriales"),
                       _buildFormatItem("DOC, DOCX", "Documentos Word"),
                       _buildFormatItem("PPT, PPTX", "Presentaciones"),
                       _buildFormatItem("TXT", "Archivos de texto"),
-                      _buildFormatItem("Practicas", "Apuntes"),
+                      _buildFormatItem("Practicas - Examenes", "Apuntes"),
                     ],
                   ),
                 ),
 
                 const SizedBox(height: 20),
-
                 // Opciones de selección
                 Column(
                   children: [
@@ -749,111 +892,10 @@ class SubirMaterialPageState extends State<SubirMaterialPage> {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
-                    // Botón para tomar foto (opcional)
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _tomarFotoDocumento();
-                        },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Utils.colorTextoBordesIconos,
-                          side: BorderSide(color: Utils.colorTextoBordesIconos),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.camera_alt, size: 20),
-                            const SizedBox(width: 10),
-                            Text(
-                              'Tomar Foto del Documento',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
                   ],
                 ),
-
                 const SizedBox(height: 20),
-
-                // Botones de acción
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                        },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Utils.colorTextoBordesIconos,
-                          side: BorderSide(color: Utils.colorTextoBordesIconos),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.cancel, size: 18),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Cancelar',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          _simularSeleccionArchivo();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Utils.colorTextoBordesIconos,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.cloud_upload, size: 18),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Seleccionar',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),
@@ -911,32 +953,30 @@ class SubirMaterialPageState extends State<SubirMaterialPage> {
     );
   }
 
-  // Métodos de simulación (los puedes reemplazar con la lógica real)
-  void _abrirExploradorArchivos() {
-    // Aquí integrarías file_picker para seleccionar archivos
-    Utils.showSnakbarInfo(
-      "Explorador de archivos",
-      "Aquí se abriría el selector de archivos del dispositivo",
-      3,
-    );
-  }
+  void _abrirExploradorArchivos() async {
+    log("Buscando archivo...");
 
-  void _tomarFotoDocumento() {
-    // Aquí integrarías la cámara para tomar fotos de documentos
-    Utils.showSnakbarInfo(
-      "Cámara",
-      "Aquí se abriría la cámara para tomar foto del documento",
-      3,
-    );
-  }
+    PlatformFile? archivo = await StorageServices().seleccionarArchivo();
 
-  void _simularSeleccionArchivo() {
-    // Simulación de selección de archivo
-    Utils.showSnakbarInfo(
-      "Archivo seleccionado",
-      "archivo_ejemplo.pdf ha sido seleccionado",
-      3,
-    );
+    if (archivo != null) {
+      setState(() {
+        _archivoSeleccionado = archivo;
+      });
+
+      log("Archivo seleccionado: ${archivo.name}");
+
+      Utils.showSnakbarOK(
+        "Archivo seleccionado",
+        "${archivo.name} ha sido cargado exitosamente",
+        2,
+      );
+    } else {
+      Utils.showSnakbarInfo(
+        "Selección cancelada",
+        "No se seleccionó ningún archivo",
+        2,
+      );
+    }
   }
 
   _botonesSubirMaterial() {
@@ -1011,7 +1051,7 @@ class SubirMaterialPageState extends State<SubirMaterialPage> {
       Utils.showSnakbarError(
         "Error",
         "La sigla de la materia es obligatoria",
-        3,
+        4,
       );
       return;
     }
@@ -1020,7 +1060,7 @@ class SubirMaterialPageState extends State<SubirMaterialPage> {
       Utils.showSnakbarError(
         "Error",
         "El nombre de la materia es obligatorio",
-        3,
+        4,
       );
       return;
     }
@@ -1029,7 +1069,7 @@ class SubirMaterialPageState extends State<SubirMaterialPage> {
       Utils.showSnakbarError(
         "Error",
         "La descripción del material es obligatoria",
-        3,
+        4,
       );
       return;
     }
@@ -1039,7 +1079,15 @@ class SubirMaterialPageState extends State<SubirMaterialPage> {
       Utils.showSnakbarError(
         "Error",
         "El enlace es obligatorio para material tipo 'Enlace'",
-        3,
+        4,
+      );
+      return;
+    }
+    if (_archivoSeleccionado == null && _tipoMaterialSeleccionado != 'Enlace') {
+      Utils.showSnakbarError(
+        "Error",
+        "Se debe seleccionar un archivo para continuar",
+        4,
       );
       return;
     }
@@ -1048,9 +1096,10 @@ class SubirMaterialPageState extends State<SubirMaterialPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Utils.colorPrimario(1.0),
+        backgroundColor: Utils
+            .colorFondosSecundariosBordesSuaves, //Utils.colorFondoSecundario(0.1),
         title: Text(
-          "Confirmar subida",
+          "¿CONFIRMA SUBIDA DE MATERIAL?",
           style: TextStyle(
             color: Utils.colorTextoBordesIconos,
             fontWeight: FontWeight.bold,
@@ -1058,14 +1107,10 @@ class SubirMaterialPageState extends State<SubirMaterialPage> {
         ),
         content: SingleChildScrollView(
           child: Column(
+            spacing: 10,
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                "¿Está seguro de subir el siguiente material?",
-                style: TextStyle(color: Utils.colorTextoBordesIconos),
-              ),
-              const SizedBox(height: 16),
               _itemConfirmacion(
                 "Materia:",
                 "$_siglaSeleccionada - $_nombreMateriaSeleccionado",
@@ -1077,36 +1122,81 @@ class SubirMaterialPageState extends State<SubirMaterialPage> {
           ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              "Cancelar",
-              style: TextStyle(color: Utils.colorTextoBordesIconos),
-            ),
+          Utils.elevatedButton(
+            "CANCELAR",
+            Utils.colorTextoBordesIconos,
+            () => Navigator.pop(context),
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Utils.colorTextoBordesIconos,
-            ),
-            onPressed: () async {
+          Utils.elevatedButton(
+            "CONFIRMAR", 
+            Utils.primaryColor, 
+            () async {
               Navigator.pop(context);
               loadingC.setOnLoading();
+              int? idMateria;
+              int? idMaterial;
+              try {
+                String enlaceFinal;
+                if (_tipoMaterialSeleccionado == 'Enlace') {
+                  enlaceFinal = enlaceController.text;
+                } else {
+                  if (_archivoSeleccionado != null) {
+                    log("Subiendo archivo a Supabase...");
+                    enlaceFinal = await StorageServices().subirArchivo(_archivoSeleccionado!,);
+                    log("Archivo subido exitosamente: $enlaceFinal");
+                  } else {
+                    throw Exception("No hay archivo seleccionado");
+                  }
+                }
+                // 🔥 SECUENCIA COMPLETA CON MANEJO DE ERRORES 🔥
 
-              // Simular subida de material
-              await Future.delayed(const Duration(seconds: 2));
+                // 1. Obtener materia
+                idMateria = Constantes.obtenerNumeroMateria(_nombreMateriaSeleccionado!, _siglaSeleccionada!);
+                /*idMateria = await DatabaseMateria().crearMateria(
+                  _semestreSeleccionado,
+                  _nombreMateriaSeleccionado!,
+                  _siglaSeleccionada!,
+                );*/
+                log("✅ Materia creada con ID: $idMateria");
 
-              loadingC.setOffLoading();
-              Utils.showSnakbarOK(
-                "¡Material subido exitosamente!",
-                "El material ha sido compartido con la comunidad",
-                4,
-              );
-              _limpiarFormulario();
-            },
-            child: const Text(
-              "Confirmar",
-              style: TextStyle(color: Colors.white),
-            ),
+                // 2. Crear material
+                idMaterial = await DatabaseMaterial().crearMaterial(
+                  _tipoMaterialSeleccionado,
+                  descripcionController.text,
+                  enlaceFinal,
+                  idMateria,
+                );
+                log("✅ Material creado con ID: $idMaterial");
+
+                // 3. Crear relación en tabla pertenece
+                await DatabasePertenece().crearRelacionPertenece(
+                  idMaterial,
+                  idMateria,
+                );
+                log(
+                  "✅ Relación creada: Material $idMaterial -> Materia $idMateria",
+                );
+
+                // 4. Éxito - mostrar mensaje y limpiar
+                loadingC.setOffLoading();
+                Utils.showSnakbarOK(
+                  "¡Material subido exitosamente!",
+                  "El material ha sido compartido con la comunidad",
+                  4,
+                );
+
+                _limpiarFormulario();
+              } catch (e) {
+                loadingC.setOffLoading();
+                log("❌ Error en la secuencia: $e");
+
+                Utils.showSnakbarError(
+                  "Error",
+                  "Ocurrió un error al subir el material. Inténtelo más tarde.",
+                  4,
+                );
+              }
+            }
           ),
         ],
       ),
@@ -1122,16 +1212,13 @@ class SubirMaterialPageState extends State<SubirMaterialPage> {
           Text(
             titulo,
             style: TextStyle(
-              color: Utils.colorTextoBordesIconos,
+              color: Utils.primaryColor,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              valor,
-              style: TextStyle(color: Utils.colorTextoBordesIconos),
-            ),
+            child: Text(valor, style: TextStyle(color: Colors.black)),
           ),
         ],
       ),
@@ -1146,11 +1233,13 @@ class SubirMaterialPageState extends State<SubirMaterialPage> {
       _semestreSeleccionado = _semestres.isNotEmpty ? _semestres.first : '';
       descripcionController.clear();
       enlaceController.clear();
+      _archivoSeleccionado = null; // Limpiar el archivo seleccionado
+      //_urlArchivo = ""; // Limpiar la URL
     });
     Utils.showSnakbarInfo(
       "Formulario limpiado",
       "Todos los campos han sido reseteados",
-      2,
+      4,
     );
   }
 

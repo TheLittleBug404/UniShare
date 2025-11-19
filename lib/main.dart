@@ -5,6 +5,7 @@ import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:get/get.dart';
 import 'package:uni_share/controllers/loading_controller/loading_controller.dart';
 import 'package:uni_share/controllers/login_controller/login_controller.dart';
+import 'package:uni_share/controllers/material_controller/material_controller.dart';
 import 'package:uni_share/controllers/navigation_controller/navigation_controller.dart';
 import 'package:uni_share/pages/home_page/home_page.dart';
 import 'package:uni_share/pages/loading_page/loading_page.dart';
@@ -29,6 +30,7 @@ void main() async {
   Get.put(LoginController());
   Get.put(NavigationController());
   Get.put(LoadingController());
+  Get.put(MaterialController());
 }
 
 class MainApp extends StatelessWidget {
