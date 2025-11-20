@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:loading_overlay/loading_overlay.dart';
 import 'package:uni_share/controllers/loading_controller/loading_controller.dart';
-import 'package:uni_share/services/database/database_materia/database_materia.dart';
 import 'package:uni_share/services/database/database_material/database_material.dart';
 import 'package:uni_share/services/database/database_pertenece/database_pertenece.dart';
 import 'package:uni_share/services/storage/storage_services.dart';

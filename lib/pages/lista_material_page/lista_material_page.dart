@@ -41,15 +41,15 @@ class _ListaMaterialPageState extends State<ListaMaterialPage> {
   // Método para obtener el icono según el tipo de material
   IconData _getIconoTipo() {
     switch (widget.tipoMaterial) {
-      case 'libros':
+      case 'Libro':
         return Icons.menu_book;
-      case 'codigos':
+      case 'Código':
         return Icons.code;
-      case 'practicas':
+      case 'Práctica':
         return Icons.assignment;
-      case 'enlaces':
+      case 'Enlace':
         return Icons.link;
-      case 'examenes':
+      case 'Examen':
         return Icons.quiz;
       default:
         return Icons.description;
@@ -59,15 +59,15 @@ class _ListaMaterialPageState extends State<ListaMaterialPage> {
   // Método para obtener el título según el tipo de material
   String _getTituloPagina() {
     switch (widget.tipoMaterial) {
-      case 'libros':
+      case 'Libro':
         return 'Libros';
-      case 'codigos':
+      case 'Código':
         return 'Códigos';
-      case 'practicas':
+      case 'Práctica':
         return 'Prácticas';
-      case 'enlaces':
+      case 'Enlace':
         return 'Enlaces';
-      case 'examenes':
+      case 'Examen':
         return 'Exámenes';
       default:
         return 'Material';
@@ -77,15 +77,15 @@ class _ListaMaterialPageState extends State<ListaMaterialPage> {
   // Método para obtener el color del icono según el tipo
   Color _getColorIcono() {
     switch (widget.tipoMaterial) {
-      case 'libros':
+      case 'Libro':
         return Colors.blue;
-      case 'codigos':
+      case 'Código':
         return Colors.green;
-      case 'practicas':
+      case 'Práctica':
         return Colors.orange;
-      case 'enlaces':
+      case 'Enlace':
         return Colors.purple;
-      case 'examenes':
+      case 'Examen':
         return Colors.red;
       default:
         return Utils.primaryColor;
@@ -148,11 +148,11 @@ class _ListaMaterialPageState extends State<ListaMaterialPage> {
   // Método para verificar si el tipo de material coincide con el tipo seleccionado
   bool _coincideConTipo(String tipoMaterial, String tipoSeleccionado) {
     final Map<String, List<String>> mapeoTipos = {
-      'libros': ['Libro', 'libro', 'book'],
-      'codigos': ['Código', 'Codigo', 'código', 'codigo', 'code'],
-      'practicas': ['Práctica', 'Practica', 'práctica', 'practica', 'practice'],
-      'enlaces': ['Enlace', 'enlace', 'link', 'Link'],
-      'examenes': ['Examen', 'examen', 'exam', 'test'],
+      'Libro': ['Libro', 'libro', 'book'],
+      'Código': ['Código', 'Codigo', 'código', 'codigo', 'code'],
+      'Práctica': ['Práctica', 'Practica', 'práctica', 'practica', 'practice'],
+      'Enlace': ['Enlace', 'enlace', 'link', 'Link'],
+      'Examen': ['Examen', 'examen', 'exam', 'test'],
     };
 
     final tiposValidos = mapeoTipos[tipoSeleccionado] ?? [tipoSeleccionado];
@@ -173,7 +173,7 @@ class _ListaMaterialPageState extends State<ListaMaterialPage> {
   }
 
   void _verMaterial(Map<String, dynamic> material) {
-    if (widget.tipoMaterial == 'enlaces') {
+    if (widget.tipoMaterial == 'Enlace') {
       _mostrarDialogoEnlace(material);
     } else {
       _abrirVisualizadorArchivo(material);

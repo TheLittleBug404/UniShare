@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
@@ -190,6 +189,7 @@ class _LoginPageState extends State<LoginPage> {
       Helpers.ingresar.toUpperCase(),
       Utils.colorTextoBordesIconos,
       () async {
+        log("PRESIONASTE EL BOTON INGRESAR");
         Utils.ocultarTeclado(context);
         loadingC.setOnLoading();
         bool internet = await Utils.hasInternet();
@@ -221,9 +221,10 @@ class _LoginPageState extends State<LoginPage> {
           Get.to(PrincipalPage(), duration: Duration(milliseconds: 500));
           Utils.showSnakbarOK("Bienvenido", "Sesion Iniciada con exito", 4);
         } catch (e) {
+          log("Error en boton Ingresar :::> $e");
           Utils.showSnakbarError(
             "Error al iniciar sesión",
-            "!Datos erroneos verifique correo o contraseña!",
+            "!Datos erroneos verifique correo o contraseña !",
             4,
           );
         } finally {
